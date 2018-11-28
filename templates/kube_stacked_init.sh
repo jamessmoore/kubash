@@ -16,9 +16,12 @@ kubeadm alpha phase kubelet config write-to-disk --config /etc/kubernetes/kubead
 kubeadm alpha phase kubelet write-env-file --config /etc/kubernetes/kubeadmcfg.yaml
 kubeadm alpha phase kubeconfig kubelet --config /etc/kubernetes/kubeadmcfg.yaml
 systemctl restart kubelet
-echo "kubectl --kubeconfig=/etc/kubernetes/admin.conf exec -n kube-system etcd-${CP0_HOSTNAME} -- etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt --cert-file /etc/kubernetes/pki/etcd/peer.crt --key-file /etc/kubernetes/pki/etcd/peer.key --endpoints=https://${CP0_IP}:2379 member add ${CP1_HOSTNAME} https://${CP1_IP}:2380"
-kubectl --kubeconfig=/etc/kubernetes/admin.conf exec -n kube-system etcd-${CP0_HOSTNAME} -- etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt --cert-file /etc/kubernetes/pki/etcd/peer.crt --key-file /etc/kubernetes/pki/etcd/peer.key --endpoints=https://${CP0_IP}:2379 member add ${CP1_HOSTNAME} https://${CP1_IP}:2380
 kubeadm alpha phase etcd local --config /etc/kubernetes/kubeadmcfg.yaml
+echo "kubectl --kubeconfig=/etc/kubernetes/admin.conf exec -n kube-system etcd-${CP0_HOSTNAME} -- etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt --cert-file /etc/kubernetes/pki/etcd/peer.crt --key-file /etc/kubernetes/pki/etcd/peer.key --endpoints=https://${CP0_IP}:2379 member add ${CP1_HOSTNAME} https://${CP1_IP}:2380"
+sleep 66
+kubectl --kubeconfig=/etc/kubernetes/admin.conf exec -n kube-system etcd-${CP0_HOSTNAME} -- etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt --cert-file /etc/kubernetes/pki/etcd/peer.crt --key-file /etc/kubernetes/pki/etcd/peer.key --endpoints=https://${CP0_IP}:2379 member add ${CP1_HOSTNAME} https://${CP1_IP}:2380
+#sleep 66
+#kubeadm alpha phase etcd local --config /etc/kubernetes/kubeadmcfg.yaml
 kubeadm alpha phase kubeconfig all --config /etc/kubernetes/kubeadmcfg.yaml
 kubeadm alpha phase controlplane all --config  /etc/kubernetes/kubeadmcfg.yaml
 kubeadm alpha phase kubelet config annotate-cri --config /etc/kubernetes/kubeadmcfg.yaml
