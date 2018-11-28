@@ -18,7 +18,7 @@ kubeadm alpha phase kubeconfig kubelet --config /etc/kubernetes/kubeadmcfg.yaml
 systemctl restart kubelet
 kubeadm alpha phase etcd local --config /etc/kubernetes/kubeadmcfg.yaml
 echo "kubectl --kubeconfig=/etc/kubernetes/admin.conf exec -n kube-system etcd-${CP0_HOSTNAME} -- etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt --cert-file /etc/kubernetes/pki/etcd/peer.crt --key-file /etc/kubernetes/pki/etcd/peer.key --endpoints=https://${CP0_IP}:2379 member add ${CP1_HOSTNAME} https://${CP1_IP}:2380"
-sleep 66
+sleep 56
 kubectl --kubeconfig=/etc/kubernetes/admin.conf exec -n kube-system etcd-${CP0_HOSTNAME} -- etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt --cert-file /etc/kubernetes/pki/etcd/peer.crt --key-file /etc/kubernetes/pki/etcd/peer.key --endpoints=https://${CP0_IP}:2379 member add ${CP1_HOSTNAME} https://${CP1_IP}:2380
 #sleep 66
 #kubeadm alpha phase etcd local --config /etc/kubernetes/kubeadmcfg.yaml
