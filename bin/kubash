@@ -977,9 +977,9 @@ EOF
   set_csv_columns
   while IFS="," read -r $csv_columns
   do
-    squawk 85 "ROLE $K8S_role $K8S_user $K8S_ip1 $K8S_sshPort"
+    #squawk 85 "ROLE $K8S_role $K8S_user $K8S_ip1 $K8S_sshPort"
     if [[ "$K8S_role" == 'node' ]]; then
-      squawk 65 "NEUTERED push kube pki ext etcd sub $K8S_user $K8S_ip1 $K8S_sshPort"
+      squawk 165 'nodes will have certs created by the join command'
       #squawk 65 "push kube pki ext etcd sub $K8S_user $K8S_ip1 $K8S_sshPort"
       #push_kube_pki_stacked_method ${STACKED_USER} ${MASTERHOSTS[$i]} ${MASTERPORTS[$i]}
       #push_kube_pki_ext_etcd_sub $K8S_user $K8S_ip1 $K8S_sshPort
