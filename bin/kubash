@@ -3169,6 +3169,7 @@ kubespray_initialize () {
   ansible-playbook \
     -i $KUBASH_ANSIBLE_HOSTS \
     -e kube_version=$KUBE_VERSION \
+    -e kubeadm_enabled=true \
     $KUBASH_DIR/submodules/kubespray/cluster.yml
 }
 
@@ -5629,12 +5630,15 @@ main () {
       ping
       exit 0
     elif [[ "$initializer" == "kubespray" ]]; then
+      squawk 5 "Kubespray Initialize"
       kubespray_initialize
       exit 0
     elif [[ "$initializer" == "openshift" ]]; then
+      squawk 5 "Openshift Initialize"
       openshift_initialize
       exit 0
     elif [[ "$initializer" == "kubeadm2ha" ]]; then
+      squawk 5 "Kubeadm2ha Initialize"
       kubeadm2ha_initialize
       exit 0
     fi
