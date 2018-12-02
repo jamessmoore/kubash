@@ -819,6 +819,9 @@ EOF
         command2run='/root/generic.w8 kube-apiserver kube-system'
         squawk 155 "$command2run"
         sudo_command ${MASTERPORTS[$i]} ${INIT_USER} ${MASTERHOSTS[$i]} "$command2run"
+        sleep 11
+        squawk 5 "do_net before other masters"
+        do_net
         w8_node $my_node_name
       fi
     fi
@@ -1040,6 +1043,8 @@ EOF
         command2run='/root/generic.w8 kube-apiserver kube-system'
         squawk 155 "$command2run"
         sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
+        squawk 5 "do_net before other masters"
+        do_net
       fi
     fi
   done
@@ -4849,7 +4854,7 @@ process_hosts_csv () {
   fi
   #start_etcd
   #do_primary_master
-  do_net
+  #do_net
   if [[ "$PARALLEL_JOBS" -gt "1" ]] ; then
     #do_masters_in_parallel
     do_nodes_in_parallel
