@@ -805,20 +805,20 @@ EOF
         echo $join_token > $KUBASH_CLUSTER_DIR/join_token
         master_grab_kube_config ${NAME} ${HOST} ${INIT_USER} ${MASTERPORTS[$i]}
         grab_kube_pki_ext_etcd_sub ${INIT_USER} ${MASTERHOSTS[$i]} ${MASTERPORTS[$i]}
-        squawk 120 "rsync $KUBASH_RSYNC_OPTS ssh -p ${MASTERPORTS[$i]} $KUBASH_DIR/w8s/generic.w8 $STACKED_USER@$HOST:/tmp/"
-        rsync $KUBASH_RSYNC_OPTS "ssh -p ${MASTERPORTS[$i]}" $KUBASH_DIR/w8s/generic.w8 $STACKED_USER@$HOST:/tmp/
+        squawk 120 "rsync $KUBASH_RSYNC_OPTS ssh -p ${MASTERPORTS[$i]} $KUBASH_DIR/w8s/generic.w8 $INIT_USER@$HOST:/tmp/"
+        rsync $KUBASH_RSYNC_OPTS "ssh -p ${MASTERPORTS[$i]}" $KUBASH_DIR/w8s/generic.w8 $INIT_USER@$HOST:/tmp/
         command2run='mv /tmp/generic.w8 /root/'
         squawk 155 "$command2run"
-        sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
+        sudo_command ${MASTERPORTS[$i]} ${INIT_USER} ${MASTERHOSTS[$i]} "$command2run"
         command2run='/root/generic.w8 kube-controller kube-system'
         squawk 155 "$command2run"
-        sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
+        sudo_command ${MASTERPORTS[$i]} ${INIT_USER} ${MASTERHOSTS[$i]} "$command2run"
         command2run='/root/generic.w8 kube-scheduler kube-system'
         squawk 155 "$command2run"
-        sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
+        sudo_command ${MASTERPORTS[$i]} ${INIT_USER} ${MASTERHOSTS[$i]} "$command2run"
         command2run='/root/generic.w8 kube-apiserver kube-system'
         squawk 155 "$command2run"
-        sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
+        sudo_command ${MASTERPORTS[$i]} ${INIT_USER} ${MASTERHOSTS[$i]} "$command2run"
       fi
     fi
   done
