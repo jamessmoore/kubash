@@ -2822,6 +2822,7 @@ hostname_in_parallel () {
 
 ntpsync_in_parallel () {
   squawk 2 'syncing ntp on all hosts'
+  ntp_sync_tmp_para=$(mktemp -d --suffix='.para.tmp')
   set_csv_columns
   while IFS="," read -r $csv_columns
   do
@@ -2829,18 +2830,18 @@ ntpsync_in_parallel () {
     MY_NTP_SYNC="timedatectl set-ntp true"
     squawk 5 "ssh -n -p $K8S_sshPort $K8S_provisionerUser@$K8S_ip1 \"$MY_NTP_SYNC\""
     echo "ssh -n -p $K8S_sshPort $K8S_provisionerUser@$K8S_ip1 \"$MY_NTP_SYNC\""\
-        >> $ping_tmp_para/hopper
+        >> $ntp_sync_tmp_para/hopper
   done < $KUBASH_HOSTS_CSV
 
   if [[ "$VERBOSITY" -gt "9" ]] ; then
-    cat $ping_tmp_para/hopper
+    cat $ntp_sync_tmp_para/hopper
   fi
   if [[ "$PARALLEL_JOBS" -gt "1" ]] ; then
-    $PARALLEL  -j $PARALLEL_JOBS -- < $ping_tmp_para/hopper
+    $PARALLEL  -j $PARALLEL_JOBS -- < $ntp_sync_tmp_para/hopper
   else
-    bash $ping_tmp_para/hopper
+    bash $ntp_sync_tmp_para/hopper
   fi
-  rm -Rf $ping_tmp_para
+  rm -Rf $ntp_sync_tmp_para
 }
 
 ping_in_parallel () {
