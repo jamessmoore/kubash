@@ -821,6 +821,7 @@ EOF
         sudo_command ${MASTERPORTS[$i]} ${INIT_USER} ${MASTERHOSTS[$i]} "$command2run"
         sleep 11
         squawk 5 "do_net before other masters"
+        w8_kubectl
         do_net
         w8_node $my_node_name
       fi
@@ -1044,7 +1045,9 @@ EOF
         squawk 155 "$command2run"
         sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
         squawk 5 "do_net before other masters"
+        w8_kubectl
         do_net
+        w8_node $my_node_name
       fi
     fi
   done
