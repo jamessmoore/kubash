@@ -701,11 +701,15 @@ EOF
 
   command2run="kubeadm config images pull"
   squawk 55 "$command2run"
+  for i in "${!MASTERHOSTS[@]}"; do
+    ssh ${INIT_USER}@${MASTERHOSTS[$i]} "$command2run"
+  done
   #ssh ${INIT_USER}@${ETCDHOSTS[0]} "$command2run"
   #ssh ${INIT_USER}@${ETCDHOSTS[1]} "$command2run"
   #ssh ${INIT_USER}@${ETCDHOSTS[2]} "$command2run"
-  #sleep 33
-  sleep 11
+  squawk 33 "sleep 33 - give etcd a chance to settle"
+  sleep 33
+  #sleep 11
 
   command2run="docker run --rm  \
     --net host \
@@ -804,6 +808,20 @@ EOF
         echo $join_token > $KUBASH_CLUSTER_DIR/join_token
         master_grab_kube_config ${NAME} ${HOST} ${INIT_USER} ${MASTERPORTS[$i]}
         grab_kube_pki_ext_etcd_sub ${INIT_USER} ${MASTERHOSTS[$i]} ${MASTERPORTS[$i]}
+        squawk 120 "rsync $KUBASH_RSYNC_OPTS ssh -p ${MASTERPORTS[$i]} $KUBASH_DIR/w8s/generic.w8 $STACKED_USER@$HOST:/tmp/"
+        rsync $KUBASH_RSYNC_OPTS "ssh -p ${MASTERPORTS[$i]}" $KUBASH_DIR/w8s/generic.w8 $STACKED_USER@$HOST:/tmp/
+        command2run='mv /tmp/generic.w8 /root/'
+        squawk 155 "$command2run"
+        sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
+        command2run='/root/generic.w8 kube-controller kube-system'
+        squawk 155 "$command2run"
+        sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
+        command2run='/root/generic.w8 kube-scheduler kube-system'
+        squawk 155 "$command2run"
+        sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
+        command2run='/root/generic.w8 kube-apiserver kube-system'
+        squawk 155 "$command2run"
+        sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
       fi
     fi
   done
