@@ -73,54 +73,13 @@ KUBASH_VERSION='v1.12.3'
 
 set -e
 
-net_set () {
-  # Set networking defaults
-  if [[ -e "$KUBASH_CLUSTER_DIR/net_set" ]]; then
-    K8S_NET=$(cat $KUBASH_CLUSTER_DIR/net_set)
-  fi
-  if [[ "$K8S_NET" == "calico" ]]; then
-    my_KUBE_CIDR="192.168.0.0/16"
-  elif [[ "$K8S_NET" == "flannel" ]]; then
-    my_KUBE_CIDR="10.244.0.0/16"
-  else
-    horizontal_rule
-    echo 'unknown pod network'
-    exit 1
-  fi
-}
-
-net_set
-
-export KUBECONFIG=$KUBASH_CLUSTER_CONFIG
-# Rasion d etre
-RAISON=false
-
-# global vars
-ANSWER_YES=no
-print_help=no
-
-user_csv_columns="user_email user_role"
-uniq_hosts_list_columns="K8S_provisionerHost K8S_provisionerUser K8S_provisionerPort K8S_provisionerBasePath K8S_os K8S_virt"
-
-set_csv_columns () {
-  squawk 125 "prep the columns strings for csv input"
-  if [ ! -z "$1" ]; then
-    KUBASH_CSV_VER=$1
-  else
-    KUBASH_CSV_VER=$(cat $KUBASH_CSV_VER_FILE)
-  fi
-  if [ "$KUBASH_CSV_VER" = '2.0.0' ]; then
-    csv_columns="K8S_node K8S_role K8S_cpuCount K8S_Memory K8S_sshPort K8S_network1 K8S_mac1 K8S_ip1 K8S_routingprefix1 K8S_subnetmask1 K8S_broadcast1 K8S_gateway1 K8S_provisionerHost K8S_provisionerUser K8S_provisionerPort K8S_provisionerBasePath K8S_os K8S_virt K8S_network2 K8S_mac2 K8S_ip2 K8S_routingprefix2 K8S_subnetmask2 K8S_broadcast2 K8S_gateway2 K8S_network3 K8S_mac3 K8S_ip3 K8S_routingprefix3 K8S_subnetmask3 K8S_broadcast3 K8S_gateway3"
-  elif [ "$KUBASH_CSV_VER" = '1.0.0' ]; then
-    csv_columns="K8S_node K8S_role K8S_cpuCount K8S_Memory K8S_sshPort K8S_network1 K8S_mac1 K8S_ip1 K8S_provisionerHost K8S_provisionerUser K8S_provisionerPort K8S_provisionerBasePath K8S_os K8S_virt K8S_network2 K8S_mac2 K8S_ip2 K8S_network3 K8S_mac3 K8S_ip3"
-  else
-    echo 'CSV columns cannot be set CSV Version not recognized'
-    exit 1
-  fi
+horizontal_rule () {
+  printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 }
 
 squawk () {
   # This function simplifies error reporting and verbosity
+  # and it always prints its message along with anything in $error_report_log
   # call it by preceding your message with a verbosity level
   # e.g. `squawk 3 "This is a squawk"`
   # if the current verbosity level is greater than or equal to
@@ -156,6 +115,100 @@ squawk () {
     fi
   fi
 }
+
+croak () {
+    # The difference between squawk and croak is that croak calls exit 1 at the end
+  # This function simplifies error reporting on death and verbosity
+  # call it by preceding your error message with a verbosity level
+  # e.g. `croak 3 "This is a croak"`
+  # if the current verbosity level is greater than or equal to
+  # the number given then this function will echo out your message
+  # and pad it with # to let you now how verbose that message was
+  croak_lvl=$1
+  shift
+  croak=$1
+  shift
+  croak_opt=$@
+
+  if [[ -z $error_report_log ]]; then
+    horizontal_rule
+    echo "Error report log $error_report_log"
+  fi
+
+  horizontal_rule
+  if [[ "$VERBOSITY" -ge "$croak_lvl" ]] ; then
+    if [[ "$croak_lvl" -le 20 ]] ; then
+      count_croak=0
+      while [[ "$count_croak" -lt "$croak_lvl" ]]; do
+        echo -n "#"
+        count_croak=`expr $count_croak + 1`
+      done
+      echo " $croak"
+    else
+      echo -n '#{ '
+      echo -n "$croak_lvl"
+      echo -n " }#############"
+      count_croak=0
+      while [[ "$count_croak" -lt "$croak_lvl" ]]; do
+        echo -n "#"
+        count_croak=`expr $count_croak + 5`
+      done
+      echo -n '#{ '
+      echo -n "$croak_lvl"
+      echo -n ' }### '
+      echo " $croak"
+    fi
+  else
+    echo " $croak"
+  fi
+  horizontal_rule
+  exit 1
+}
+
+net_set () {
+  # Set networking defaults
+  if [[ -e "$KUBASH_CLUSTER_DIR/net_set" ]]; then
+    K8S_NET=$(cat $KUBASH_CLUSTER_DIR/net_set)
+  fi
+  if [[ "$K8S_NET" == "calico" ]]; then
+    my_KUBE_CIDR="192.168.0.0/16"
+  elif [[ "$K8S_NET" == "flannel" ]]; then
+    my_KUBE_CIDR="10.244.0.0/16"
+  else
+    horizontal_rule
+    croak 3 'unknown pod network'
+  fi
+}
+
+net_set
+
+export KUBECONFIG=$KUBASH_CLUSTER_CONFIG
+# Rasion d etre
+RAISON=false
+
+# global vars
+ANSWER_YES=no
+print_help=no
+
+user_csv_columns="user_email user_role"
+uniq_hosts_list_columns="K8S_provisionerHost K8S_provisionerUser K8S_provisionerPort K8S_provisionerBasePath K8S_os K8S_virt"
+
+set_csv_columns () {
+  squawk 125 "prep the columns strings for csv input"
+  if [ ! -z "$1" ]; then
+    KUBASH_CSV_VER=$1
+  else
+    KUBASH_CSV_VER=$(cat $KUBASH_CSV_VER_FILE)
+  fi
+  if [ "$KUBASH_CSV_VER" = '2.0.0' ]; then
+    csv_columns="K8S_node K8S_role K8S_cpuCount K8S_Memory K8S_sshPort K8S_network1 K8S_mac1 K8S_ip1 K8S_routingprefix1 K8S_subnetmask1 K8S_broadcast1 K8S_gateway1 K8S_provisionerHost K8S_provisionerUser K8S_provisionerPort K8S_provisionerBasePath K8S_os K8S_virt K8S_network2 K8S_mac2 K8S_ip2 K8S_routingprefix2 K8S_subnetmask2 K8S_broadcast2 K8S_gateway2 K8S_network3 K8S_mac3 K8S_ip3 K8S_routingprefix3 K8S_subnetmask3 K8S_broadcast3 K8S_gateway3"
+  elif [ "$KUBASH_CSV_VER" = '1.0.0' ]; then
+    csv_columns="K8S_node K8S_role K8S_cpuCount K8S_Memory K8S_sshPort K8S_network1 K8S_mac1 K8S_ip1 K8S_provisionerHost K8S_provisionerUser K8S_provisionerPort K8S_provisionerBasePath K8S_os K8S_virt K8S_network2 K8S_mac2 K8S_ip2 K8S_network3 K8S_mac3 K8S_ip3"
+  else
+    croak 3  'CSV columns cannot be set CSV Version not recognized'
+  fi
+}
+
 
 grab_kube_pki_ext_etcd_sub () {
   grab_sub_USER=$1
@@ -283,8 +336,7 @@ determine_api_version () {
   if [[ $KUBE_MAJOR_VER -eq 1 ]]; then
     squawk 20 'Major Version 1'
     if [[ $KUBE_MINOR_VER -lt 9 ]]; then
-      echo "$KUBE_MINOR_VER is too old may not ever be supported"
-      exit 1
+      croak 3  "$KUBE_MINOR_VER is too old may not ever be supported"
     elif [[ $KUBE_MINOR_VER -eq 9 ]]; then
       squawk 75 kubeadm_apiVersion="kubeadm.k8s.io/v1alpha1"
       export kubeadm_apiVersion="kubeadm.k8s.io/v1alpha1"
@@ -305,15 +357,12 @@ determine_api_version () {
       export kubeadm_apiVersion="kubeadm.k8s.io/v1alpha3"
       kubeadm_cfg_kind=ClusterConfiguration
     else
-      echo "$KUBE_MINOR_VER not supported yet"
-      exit 1
+      croak 3  "$KUBE_MINOR_VER not supported yet"
     fi
   elif [[ $MAJOR_VER -eq 0 ]]; then
-    squawk 1 'Major Version 0 unsupported'
-    exit 1
+    croak 3 'Major Version 0 unsupported'
   else
-    squawk 1 'Major Version Unknown'
-    exit 1
+    croak 3 'Major Version Unknown'
   fi
 }
 
@@ -746,8 +795,7 @@ EOF
         | sed 's/\(.*\)--token\ \(\S*\)\ --discovery-token-ca-cert-hash\ .*/\2/')
       if [[ -z "$run_join" ]]; then
         horizontal_rule
-        echo 'kubeadm init failed!'
-        exit 1
+        croak 3  'kubeadm init failed!'
       else
         echo $run_join > $KUBASH_CLUSTER_DIR/join.sh
         echo $run_join > $KUBASH_CLUSTER_DIR/master_join.sh
@@ -956,8 +1004,7 @@ EOF
         | sed 's/\(.*\)--token\ \(\S*\)\ --discovery-token-ca-cert-hash\ .*/\2/')
       if [[ -z "$run_join" ]]; then
         horizontal_rule
-        echo 'kubeadm init failed!'
-        exit 1
+        croak 3  'kubeadm init failed!'
       else
         echo $run_join > $KUBASH_CLUSTER_DIR/join.sh
         echo $join_token > $KUBASH_CLUSTER_DIR/join_token
@@ -989,10 +1036,6 @@ EOF
   done <<< "$kubash_hosts_csv_slurped"
   rm -Rf $etcd_stacked_tmp
 
-}
-
-horizontal_rule () {
-  printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
 }
 
 usage () {
@@ -1204,17 +1247,14 @@ check_cmd () {
   if ! test_cmd_loc="$(type -p "$1")" || [[ -z "$test_cmd_loc" ]]; then
     horizontal_rule
     echo "$1 was not found in your path!"
-    echo "To proceed please install $1 to your path and try again!"
-    exit 1
+    croak 3  "To proceed please install $1 to your path and try again!"
   fi
 }
 
 # Check if a file exists and is writable
 check_file () {
   if [[ -w "$1" ]]; then
-    horizontal_rule
-    echo "$1 was not writable!"
-    exit 1
+    croak 3  "$1 was not writable!"
   fi
 }
 
@@ -1321,8 +1361,7 @@ remove_all_base_images_kvm () {
   elif [ "$KUBASH_CSV_VER" = '1.0.0' ]; then
     uniq_hosts="$(grep -v '^#' $KUBASH_PROVISION_CSV|cut -d, -f9,10,11,12,13,14|sort|uniq)"
   else
-    echo 'CSV columns cannot be set CSV Version not recognized'
-    exit 1
+    croak 3  'CSV columns cannot be set CSV Version not recognized'
   fi
   squawk 8 "$uniq_hosts"
   copy_image_tmp_para=$(mktemp -d)
@@ -1399,16 +1438,14 @@ vbox-provisioner () {
   K8S_ip3=${19}
   "
 
-  echo 'Vbox provisioner not implemented yet'
-  exit 1
+  croak 3  'Vbox provisioner not implemented yet'
 }
 
 gke_yaml2cluster () {
   yaml2cluster_tmp=$(mktemp -d)
   echo yaml2cluster
   if [[ -z "$1" ]]; then
-    echo 'gke_yaml2cluster requires an argument'
-    exit 1
+    croak 3  'gke_yaml2cluster requires an argument'
   fi
   this_yaml=$1
   this_json=$yaml2cluster_tmp/this.json
@@ -1421,8 +1458,7 @@ gke_yaml2cluster () {
 gke_json2cluster () {
   json2cluster_tmp=$(mktemp -d)
   if [[ -z "$1" ]]; then
-    echo 'json2cluster requires an argument'
-    exit 1
+    croak 3  'json2cluster requires an argument'
   fi
   this_json=$1
 
@@ -1561,8 +1597,7 @@ gke-provisioner () {
   squawk 1 "gke-provisioner $@"
 
   if [[ -z "$1" ]]; then
-    echo 'gke-provisioner requires an argument'
-    exit 1
+    croak 3  'gke-provisioner requires an argument'
   fi
 
   if [[ "${1: -5}" == '.yaml' ]]; then
@@ -1974,8 +2009,7 @@ refresh_network_addresses () {
       until [[ "$this_ssh_status" == '0' ]]
       do
         if [[ "$countzero" -gt 25 ]]; then
-          echo "$K8S_node host not coming up investigate $this_node_ip"
-          exit 1
+          croak 3  "$K8S_node host not coming up investigate $this_node_ip"
         elif [[ "$countzero" -gt 2 ]]; then
           sleep 3
         fi
@@ -1995,8 +2029,7 @@ refresh_network_addresses () {
         echo "$K8S_node,$K8S_role,$K8S_cpuCount,$K8S_Memory,$K8S_sshPort,$K8S_network1,$K8S_mac1,$this_node_ip,$K8S_provisionerHost,$K8S_provisionerUser,$K8S_provisionerPort,$K8S_provisionerBasePath,$K8S_os,$K8S_virt,$K8S_network2,$K8S_mac2,$K8S_ip2,$K8S_network3,$K8S_mac3,$K8S_ip3" \
           >> $KUBASH_HOSTS_CSV
       else
-        echo 'CSV columns cannot be set CSV Version not recognized'
-        exit 1
+        croak 3  'CSV columns cannot be set CSV Version not recognized'
       fi
       this_node_ip=''
   done <<< "$slurpy"
@@ -2012,8 +2045,7 @@ copy_image_to_all_provisioning_hosts () {
   elif [ "$KUBASH_CSV_VER" = '1.0.0' ]; then
     uniq_hosts="$(grep -v '^#' $KUBASH_PROVISION_CSV|cut -d, -f9,10,11,12,13,14|sort|uniq)"
   else
-    echo 'CSV columns cannot be set CSV Version not recognized'
-    exit 1
+    croak 3  'CSV columns cannot be set CSV Version not recognized'
   fi
   squawk 8 "$uniq_hosts"
   copy_image_tmp_para=$(mktemp -d)
@@ -2063,8 +2095,7 @@ apparmor_fix_all_provisioning_hosts () {
   elif [ "$KUBASH_CSV_VER" = '1.0.0' ]; then
     uniq_hosts="$(grep -v '^#' $KUBASH_PROVISION_CSV|cut -d, -f9,10,11,12,13,14|sort|uniq)"
   else
-    echo 'CSV columns cannot be set CSV Version not recognized'
-    exit 1
+    croak 3  'CSV columns cannot be set CSV Version not recognized'
   fi
   squawk 8 "$uniq_hosts"
   apparmor_tmp_para=$(mktemp -d)
@@ -2199,8 +2230,7 @@ taint_ingress () {
     ((++count_ingress))
   done
   if [[ $count_ingress -eq 0 ]]; then
-    echo 'No ingress nodes found!'
-    exit 1
+    croak 3  'No ingress nodes found!'
   fi
 }
 
@@ -2222,8 +2252,7 @@ taint_all_ingress () {
   echo "count_all_ingress $count_all_ingress"
   if [[ $count_all_ingress -eq 0 ]]; then
     squawk 150 "slurpy -----> $(echo $kubash_hosts_csv_slurped)"
-    echo 'No ingress nodes found!!!'
-    exit 1
+    croak 3  'No ingress nodes found!!!'
   else
     squawk 185 "ROLE $K8S_role $K8S_user $K8S_ip1 $K8S_sshPort"
     squawk 101 "taint these nodes_to_taint=$K8S_node $nodes_to_taint"
@@ -2666,8 +2695,7 @@ w8_kubectl () {
     ((++countone_w8_kubectl))
     squawk 9 "$countone_w8_kubectl"
     if [[ "$countone_w8_kubectl" -ge "$countlimit_w8_kubectl"  ]]; then
-      echo 'Master is not coming up, investigate, breaking'
-      exit 1
+      croak 3  'Master is not coming up, investigate, breaking'
     fi
     sleep 5
   done
@@ -2934,8 +2962,7 @@ master_init_join () {
   elif [[ -e  "$KUBASH_CLUSTER_DIR/primary_master.ip1" ]]; then
     K8S_load_balancer_ip=$(head -n1 $KUBASH_CLUSTER_DIR/primary_master.ip1)
   else
-    echo 'no load balancer ip'
-    exit 1
+    croak 3  'no load balancer ip'
   fi
 
   if [[ "DO_KEEPALIVED" == 'true' ]]; then
@@ -3007,8 +3034,7 @@ master_init_join () {
       run_join=$(ssh -n $my_master_user@$my_master_ip "$my_KUBE_INIT" | tee $TMP/rawresults.k8s | grep -- "$my_grep")
       if [[ -z "$run_join" ]]; then
         horizontal_rule
-        echo 'kubeadm init failed!'
-        exit 1
+        croak 3  'kubeadm init failed!'
       fi
       #command2run='sudo  rm -f /tmp/config.yaml'
       #ssh -n -p $my_master_port $my_master_user@$my_master_ip "$command2run"
@@ -3020,8 +3046,7 @@ master_init_join () {
       run_join=$(ssh -n $my_master_user@$my_master_ip "$my_KUBE_INIT" | tee $TMP/rawresults.k8s | grep -- "$my_grep")
       if [[ -z "$run_join" ]]; then
         horizontal_rule
-        echo 'kubeadm init failed!'
-        exit 1
+        croak 3  'kubeadm init failed!'
       fi
     fi
     squawk 9 "$(cat $TMP/rawresults.k8s)"
@@ -3222,8 +3247,7 @@ check_csv () {
   if [[ ! -e $KUBASH_HOSTS_CSV ]]; then
     horizontal_rule
     echo "$KUBASH_HOSTS_CSV file not found!"
-    echo "You must provision a cluster first, and specify a valid cluster with the --clustername option and place your hosts.csv file in its directory!"
-    exit 1
+    croak 3  "You must provision a cluster first, and specify a valid cluster with the --clustername option and place your hosts.csv file in its directory!"
   fi
 }
 
@@ -3266,8 +3290,7 @@ finish_pki_for_masters () {
   if [[ $# -ne 4 ]]; then
     kubash_interactive
     echo 'Arguments does not equal 4!'
-    echo "Arguments: $@"
-    exit 1
+    croak 3  "Arguments: $@"
   fi
   this_user=$1
   this_host=$2
@@ -3307,16 +3330,13 @@ finish_etcd () {
     if [[ $KUBE_MINOR_VER -lt 12 ]]; then
       finish_etcd_direct_download $this_user $this_host $this_name $this_port
     else
-      echo 'stubbed not working yet'
-      exit 1
+      croak 3  'stubbed not working yet'
       #finish_etcd_kubelet_download $this_user $this_host $this_name $this_port
     fi
   elif [[ $MAJOR_VER -eq 0 ]]; then
-    squawk 1 'Major Version 0 unsupported'
-    exit 1
+    croak 3 'Major Version 0 unsupported'
   else
-    squawk 1 'Major Version Unknown'
-    exit 1
+    croak 3 'Major Version Unknown'
   fi
 }
 
@@ -3448,8 +3468,7 @@ prep_init_etcd () {
   if [[ $KUBE_MAJOR_VER -eq 1 ]]; then
     squawk 175 'Kube Major Version 1 for prep init etcd'
     if [[ $KUBE_MINOR_VER -lt 12 ]]; then
-      #echo "$KUBE_MAJOR_VER.$KUBE_MINOR_VER less than 12 broken atm prep_init_etcd_kubelet_download $prep_init_etcd_user $prep_init_etcd_host $prep_init_etcd_name $prep_init_etcd_port"
-      #exit 1
+      #croak 3  "$KUBE_MAJOR_VER.$KUBE_MINOR_VER less than 12 broken atm prep_init_etcd_kubelet_download $prep_init_etcd_user $prep_init_etcd_host $prep_init_etcd_name $prep_init_etcd_port"
       squawk 175 "$KUBE_MAJOR_VER.$KUBE_MINOR_VER Kube Minor Version less than 12 for prep init etcd"
       prep_init_etcd_classic $prep_init_etcd_user $prep_init_etcd_host $prep_init_etcd_name $prep_init_etcd_port
     else
@@ -3459,11 +3478,9 @@ prep_init_etcd () {
       squawk 83 'End pre_init_etcd'
     fi
   elif [[ $MAJOR_VER -eq 0 ]]; then
-    squawk 1 'Major Version 0 unsupported'
-    exit 1
+    croak 3 'Major Version 0 unsupported'
   else
-    squawk 1 'Major Version Unknown'
-    exit 1
+    croak 3 'Major Version Unknown'
   fi
 }
 
@@ -3499,8 +3516,7 @@ prep_20-etcd-service-manager () {
     # Print usage
     echo 'Error! wrong number of arguments'
     echo 'usage:'
-    echo "$0 user host name port"
-    exit 1
+    croak 3  "$0 user host name port"
   fi
   squawk 5 prep_init_etcd_kubelet_download
   prep_20_etcd_service_manager_tmp=$(mktemp -d)
@@ -3683,18 +3699,15 @@ prep_etcd () {
         kube_primary_port=$(cat $KUBASH_CLUSTER_DIR/kube_primary_port)
         kube_primary_user=$(cat $KUBASH_CLUSTER_DIR/kube_primary_user)
       else
-        echo 'no master found'
-        exit 1
+        croak 3  'no master found'
       fi
       prep_etcd_gen_certs $this_port $this_user $this_host $kube_primary_port $kube_primary_user $kube_primary
       #prep_etcd_gen_certs $this_port $this_user $this_host $this_port $kube_primary_user $kube_primary
     fi
   elif [[ $MAJOR_VER -eq 0 ]]; then
-    squawk 1 'Major Version 0 unsupported'
-    exit 1
+    croak 3 'Major Version 0 unsupported'
   else
-    squawk 1 'Major Version Unknown'
-    exit 1
+    croak 3 'Major Version Unknown'
   fi
 }
 
@@ -3709,8 +3722,7 @@ set_ip_files () {
         echo $K8S_sshPort > $KUBASH_CLUSTER_DIR/kube_primary_port
         echo $K8S_provisionerUser > $KUBASH_CLUSTER_DIR/kube_primary_user
       else
-        echo 'there should only be one primary master'
-        exit 1
+        croak 3  'there should only be one primary master'
       fi
       ((++countprimarymaster))
     elif [[ "$K8S_role" == "primary_etcd"  ]]; then
@@ -3720,8 +3732,7 @@ set_ip_files () {
         echo $K8S_sshPort > $KUBASH_CLUSTER_DIR/kube_primary_etcd_port
         echo $K8S_provisionerUser > $KUBASH_CLUSTER_DIR/kube_primary_etcd_user
       else
-        echo 'there should only be one primary etcd'
-        exit 1
+        croak 3  'there should only be one primary etcd'
       fi
       ((++countprimaryetcd))
     elif [[ "$K8S_role" == "master"  ]]; then
@@ -3770,8 +3781,7 @@ write_kubeadmcfg_yaml () {
           command2run="mkdir -p /tmp/${K8S_ip1}"
           sudo_command $my_master_port $my_master_user $my_master_ip "$command2run"
         else
-          echo 'no master found'
-          exit 1
+          croak 3  'no master found'
         fi
   done <<< "$kubash_hosts_csv_slurped"
   countzero=0
@@ -3924,14 +3934,10 @@ write_kubeadmcfg_yaml () {
 
   squawk 19 "check number of etcd nodes"
   if [[ "$countetcdnodes" -lt "3" ]]; then
-    horizontal_rule
-    echo "not enough etcd nodes, [$countetcdnodes]"
-    exit 1
+    croak 3  "not enough etcd nodes, [$countetcdnodes]"
   else
     if [[ "$((countetcdnodes%2))" -eq 0 ]]; then
-      horizontal_rule
-      echo "number of etcd nodes, [$countetcdnodes] is even which is not supported"
-      exit 1
+      croak 3  "number of etcd nodes, [$countetcdnodes] is even which is not supported"
     fi
   fi
 
@@ -3944,8 +3950,7 @@ write_kubeadmcfg_yaml () {
     my_master_user=$( cat $KUBASH_CLUSTER_DIR/kube_primary_user)
     my_master_port=$( cat $KUBASH_CLUSTER_DIR/kube_primary_port)
   else
-    echo 'no master found'
-    exit 1
+    croak 3  'no master found'
   fi
   # create  config files
   while IFS="," read -r $csv_columns
@@ -3966,8 +3971,7 @@ write_kubeadmcfg_yaml () {
         if [[ $KUBE_MAJOR_VER -eq 1 ]]; then
           squawk 20 'Major Version 1'
           if [[ $KUBE_MINOR_VER -lt 9 ]]; then
-            echo "$KUBE_MINOR_VER is too old may not ever be supported"
-            exit 1
+            croak 3  "$KUBE_MINOR_VER is too old may not ever be supported"
           elif [[ $KUBE_MINOR_VER -eq 11 ]]; then
             kubeadmin_config_tmp=$(mktemp)
             my_master_ip=$( cat $KUBASH_CLUSTER_DIR/kube_primary) \
@@ -3998,11 +4002,9 @@ write_kubeadmcfg_yaml () {
               > $do_etcd_tmp_para/${K8S_node}kubeadmcfg.yaml
           fi
         elif [[ $MAJOR_VER -eq 0 ]]; then
-          squawk 1 'Major Version 0 unsupported'
-          exit 1
+          croak 3 'Major Version 0 unsupported'
         else
-          squawk 1 'Major Version Unknown'
-          exit 1
+          croak 3 'Major Version Unknown'
         fi
 
         # now for the external
@@ -4013,8 +4015,7 @@ write_kubeadmcfg_yaml () {
         if [[ $KUBE_MAJOR_VER -eq 1 ]]; then
           squawk 20 'Major Version 1'
           if [[ $KUBE_MINOR_VER -lt 9 ]]; then
-            echo "$KUBE_MAJOR_VER.$KUBE_MINOR_VER is too old may not ever be supported"
-            exit 1
+            croak 3  "$KUBE_MAJOR_VER.$KUBE_MINOR_VER is too old may not ever be supported"
           elif [[ $KUBE_MINOR_VER -eq 11 ]]; then
             kubeadmin_config_tmp=$(mktemp)
             my_master_ip=$( cat $KUBASH_CLUSTER_DIR/kube_primary) \
@@ -4045,11 +4046,9 @@ write_kubeadmcfg_yaml () {
               > $do_etcd_tmp_para/${K8S_node}-external-kubeadmcfg.yaml
           fi
         elif [[ $MAJOR_VER -eq 0 ]]; then
-          squawk 1 'Major Version 0 unsupported'
-          exit 1
+          croak 3 'Major Version 0 unsupported'
         else
-          squawk 1 'Major Version Unknown'
-          exit 1
+          croak 3 'Major Version Unknown'
         fi
 
         #squawk 25 "scp -P $K8S_sshPort $do_etcd_tmp_para/${K8S_node}kubeadmcfg.yaml $K8S_SU_USER@$K8S_ip1:/tmp/kubeadmcfg.yaml"
@@ -4082,8 +4081,7 @@ write_kubeadmcfg_yaml () {
         if [[ $KUBE_MAJOR_VER -eq 1 ]]; then
           squawk 20 'Major Version 1'
           if [[ $KUBE_MINOR_VER -lt 9 ]]; then
-            echo "$KUBE_MINOR_VER is too old may not ever be supported"
-            exit 1
+            croak 3  "$KUBE_MINOR_VER is too old may not ever be supported"
           elif [[ $KUBE_MINOR_VER -eq 11 ]]; then
             kubeadmin_config_tmp=$(mktemp)
             my_master_ip=$( cat $KUBASH_CLUSTER_DIR/kube_primary) \
@@ -4114,11 +4112,9 @@ write_kubeadmcfg_yaml () {
               > $do_etcd_tmp_para/${K8S_node}kubeadmcfg.yaml
           fi
         elif [[ $MAJOR_VER -eq 0 ]]; then
-          squawk 1 'Major Version 0 unsupported'
-          exit 1
+          croak 3 'Major Version 0 unsupported'
         else
-          squawk 1 'Major Version Unknown'
-          exit 1
+          croak 3 'Major Version Unknown'
         fi
 
         command2run="mkdir -p /tmp/${K8S_ip1}"
@@ -4141,8 +4137,7 @@ write_kubeadmcfg_yaml () {
         if [[ $KUBE_MAJOR_VER -eq 1 ]]; then
           squawk 20 'Major Version 1'
           if [[ $KUBE_MINOR_VER -lt 9 ]]; then
-            echo "$KUBE_MAJOR_VER.$KUBE_MINOR_VER is too old may not ever be supported"
-            exit 1
+            croak 3  "$KUBE_MAJOR_VER.$KUBE_MINOR_VER is too old may not ever be supported"
           elif [[ $KUBE_MINOR_VER -eq 11 ]]; then
             kubeadmin_config_tmp=$(mktemp)
             my_master_ip=$( cat $KUBASH_CLUSTER_DIR/kube_primary) \
@@ -4173,11 +4168,9 @@ write_kubeadmcfg_yaml () {
               > $do_etcd_tmp_para/${K8S_node}-external-kubeadmcfg.yaml
           fi
         elif [[ $MAJOR_VER -eq 0 ]]; then
-          squawk 1 'Major Version 0 unsupported'
-          exit 1
+          croak 3 'Major Version 0 unsupported'
         else
-          squawk 1 'Major Version Unknown'
-          exit 1
+          croak 3 'Major Version Unknown'
         fi
         command2run="mkdir -p /tmp/${K8S_ip1}"
         sudo_command $my_master_port $my_master_user $my_master_ip "$command2run"
@@ -4226,8 +4219,7 @@ do_etcd () {
           # save these values for clusterwide usage
           #kubash -n $KUBASH_CLUSTER_NAME --verbosity=$VERBOSITY prepetcd $K8S_provisionerUser $K8S_ip1 $K8S_node $K8S_sshPort
         else
-          echo 'there should only be one primary master'
-          exit 1
+          croak 3  'there should only be one primary master'
         fi
       fi
     else
@@ -4238,8 +4230,7 @@ do_etcd () {
           # save these values for clusterwide usage
           #kubash -n $KUBASH_CLUSTER_NAME --verbosity=$VERBOSITY prepetcd $K8S_provisionerUser $K8S_ip1 $K8S_node $K8S_sshPort
         else
-          echo 'there should only be one primary etcd'
-          exit 1
+          croak 3  'there should only be one primary etcd'
         fi
       fi
     fi
@@ -4293,8 +4284,7 @@ do_etcd () {
           kubash -n $KUBASH_CLUSTER_NAME --verbosity=$VERBOSITY prepetcd $K8S_provisionerUser $K8S_ip1 $K8S_node $K8S_sshPort
           finalize_etcd_gen_certs $K8S_sshPort $K8S_provisionerUser $K8S_ip1
         else
-          echo 'there should only be one primary master'
-          exit 1
+          croak 3  'there should only be one primary master'
         fi
       fi
     else
@@ -4304,8 +4294,7 @@ do_etcd () {
           kubash -n $KUBASH_CLUSTER_NAME --verbosity=$VERBOSITY prepetcd $K8S_provisionerUser $K8S_ip1 $K8S_node $K8S_sshPort
           finalize_etcd_gen_certs $K8S_sshPort $K8S_provisionerUser $K8S_ip1
         else
-          echo 'there should only be one primary etcd'
-          exit 1
+          croak 3  'there should only be one primary etcd'
         fi
       fi
     fi
@@ -4437,11 +4426,9 @@ do_masters_in_parallel () {
           > $kubeadmin_config_tmp
       fi
     elif [[ $MAJOR_VER -eq 0 ]]; then
-      squawk 1 'Major Version 0 unsupported'
-      exit 1
+      croak 3 'Major Version 0 unsupported'
     else
-      squawk 1 'Major Version Unknown'
-      exit 1
+      croak 3 'Major Version Unknown'
     fi
     squawk 5 "copy_in_parallel_to_role master '$kubeadmin_config_tmp' '/tmp/config.yaml'"
     copy_in_parallel_to_role master "$kubeadmin_config_tmp" "/tmp/config.yaml"
@@ -4556,8 +4543,7 @@ do_command_in_parallel () {
 do_command () {
   squawk 3 " do_command $@"
   if [[ ! $# -eq 4 ]]; then
-    echo "do_command $@ <--- arguments does not equal 4!!!"
-    exit 1
+    croak 3  "do_command $@ <--- arguments does not equal 4!!!"
   fi
   do_command_port=$1
   do_command_user=$2
@@ -4574,8 +4560,7 @@ do_command () {
 
 sudo_command () {
   if [[ ! $# -eq 4 ]]; then
-    echo "sudo_command $@ <--- arguments does not equal 4!!!"
-    exit 1
+    croak 3  "sudo_command $@ <--- arguments does not equal 4!!!"
   fi
   squawk 3 " sudo_command '$1' '$2' '$3 '$4'"
   sudo_command_port=$1
@@ -5027,8 +5012,7 @@ yaml2cluster () {
   squawk 15 "yaml2cluster"
   yaml2cluster_tmp=$(mktemp -d)
   if [[ -z "$1" ]]; then
-    echo 'yaml2cluster requires an argument'
-    exit 1
+    croak 3  'yaml2cluster requires an argument'
   fi
   this_yaml=$1
   this_json=$yaml2cluster_tmp/this.json
@@ -5042,8 +5026,7 @@ json2cluster () {
   squawk 15 "json2cluster"
   json2cluster_tmp=$(mktemp -d)
   if [[ -z "$1" ]]; then
-    echo 'json2cluster requires an argument'
-    exit 1
+    croak 3  'json2cluster requires an argument'
   fi
   this_json=$1
 
@@ -5076,8 +5059,7 @@ json2cluster () {
       '.hosts[] | "\(.hostname),\(.role),\(.cpuCount),\(.Memory),\(.sshPort),\(.network1.network),\(.network1.mac),\(.network1.ip),\(.provisioner.Host),\(.provisioner.User),\(.provisioner.Port),\(.provisioner.BasePath),\(.os),\(.virt),\(.network2.network),\(.network2.mac),\(.network2.ip),\(.network3.network),\(.network3.mac),\(.network3.ip)"' \
       $this_json >  $json2cluster_tmp/tmp.csv
   else
-    echo 'CSV columns cannot be set CSV Version not recognized'
-    exit 1
+    croak 3  'CSV columns cannot be set CSV Version not recognized'
   fi
 
   set_csv_columns $KUBASH_CSV_VER
@@ -5104,8 +5086,7 @@ json2cluster () {
       echo "$K8S_node,$K8S_role,$K8S_cpuCount,$K8S_Memory,$K8S_sshPort,$K8S_network1,$K8S_mac1,$K8S_ip1,$K8S_provisionerHost,$K8S_provisionerUser,$K8S_provisionerPort,$K8S_provisionerBasePath,$K8S_os,$K8S_virt,$K8S_network2,$K8S_mac2,$K8S_ip2,$K8S_network3,$K8S_mac3,$K8S_ip3" \
         >>  $json2cluster_tmp/provision.csv
     else
-      echo 'CSV columns cannot be set CSV Version not recognized'
-      exit 1
+      croak 3  'CSV columns cannot be set CSV Version not recognized'
     fi
   done < "$json2cluster_tmp/tmp.csv"
 
@@ -5279,8 +5260,7 @@ main () {
   if [[ $? -ne 0 ]];
   then
     horizontal_rule
-    echo 'bad argruments'
-    exit 1
+    croak 3  'bad argruments'
   fi
 
   # A little magic, necessary when using getopt.
@@ -5900,9 +5880,7 @@ main () {
       #override packer atm
       builder=coreos
       if [[ $builder == "packer" ]]; then
-        horizontal_rule
-        echo 'packer not supported for coreos at this time'
-        exit 1
+        croak 3  'packer not supported for coreos at this time'
       elif [[ $builder == "coreos" ]]; then
         if [[ -z "$target_build" ]]; then
     squawk 5 "Setting coreos channel to stable"
@@ -5925,13 +5903,9 @@ main () {
     elif [[ $builder == "veewee" ]]; then
       squawk 2 " Executing vee wee build..."
       # veewee_build
-      horizontal_rule
-      echo 'VeeWee support not built yet :('
-      exit 1
+      croak 3  'VeeWee support not built yet :('
     else
-      horizontal_rule
-      echo 'builder not recognized'
-      exit 1
+      croak 3  'builder not recognized'
     fi
     exit 0
   elif [[ $RAISON == "node_join" ]]; then
@@ -5941,29 +5915,19 @@ main () {
       exit 1
     fi
     if [[ -z "$node_join_name" ]]; then
-      horizontal_rule
-      echo 'you must specify the --node-join-name option'
-      exit 1
+      croak 3  'you must specify the --node-join-name option'
     fi
     if [[ -z "$node_join_ip" ]]; then
-      horizontal_rule
-      echo 'you must specify the --node-join-ip option'
-      exit 1
+      croak 3  'you must specify the --node-join-ip option'
     fi
     if [[ -z "$node_join_user" ]]; then
-      horizontal_rule
-      echo 'you must specify the --node-join-user option'
-      exit 1
+      croak 3  'you must specify the --node-join-user option'
     fi
     if [[ -z "$node_join_port" ]]; then
-      horizontal_rule
-      echo 'you must specify the --node-join-port option'
-      exit 1
+      croak 3  'you must specify the --node-join-port option'
     fi
     if [[ -z "$node_join_role" ]]; then
-      horizontal_rule
-      echo 'you must specify the --node-join-role option'
-      exit 1
+      croak 3  'you must specify the --node-join-role option'
     fi
     if [[ $node_join_role == "node" ]]; then
       squawk 2 " Executing node join..."
