@@ -704,9 +704,6 @@ EOF
   for i in "${!MASTERHOSTS[@]}"; do
     ssh ${INIT_USER}@${MASTERHOSTS[$i]} "$command2run"
   done
-  #ssh ${INIT_USER}@${ETCDHOSTS[0]} "$command2run"
-  #ssh ${INIT_USER}@${ETCDHOSTS[1]} "$command2run"
-  #ssh ${INIT_USER}@${ETCDHOSTS[2]} "$command2run"
   squawk 33 "sleep 33 - give etcd a chance to settle"
   sleep 33
   #sleep 11
@@ -2823,14 +2820,36 @@ hostname_in_parallel () {
   rm -Rf $hostname_tmp_para
 }
 
+ntpsync_in_parallel () {
+  squawk 2 'syncing ntp on all hosts'
+  set_csv_columns
+  while IFS="," read -r $csv_columns
+  do
+    squawk 103 "ntp sync $K8S_user@$K8S_ip1"
+    MY_NTP_SYNC="timedatectl set-ntp true"
+    squawk 5 "ssh -n -p $K8S_sshPort $K8S_provisionerUser@$K8S_ip1 \"$MY_NTP_SYNC\""
+    echo "ssh -n -p $K8S_sshPort $K8S_provisionerUser@$K8S_ip1 \"$MY_NTP_SYNC\""\
+        >> $ping_tmp_para/hopper
+  done < $KUBASH_HOSTS_CSV
+
+  if [[ "$VERBOSITY" -gt "9" ]] ; then
+    cat $ping_tmp_para/hopper
+  fi
+  if [[ "$PARALLEL_JOBS" -gt "1" ]] ; then
+    $PARALLEL  -j $PARALLEL_JOBS -- < $ping_tmp_para/hopper
+  else
+    bash $ping_tmp_para/hopper
+  fi
+  rm -Rf $ping_tmp_para
+}
+
 ping_in_parallel () {
   ping_tmp_para=$(mktemp -d --suffix='.para.tmp')
   squawk 2 ' Pinging all hosts using ssh'
   set_csv_columns
   while IFS="," read -r $csv_columns
   do
-    squawk 1 "$K8S_ip1"
-    squawk 3 "$K8S_user"
+    squawk 103 "ping $K8S_user@$K8S_ip1"
     MY_ECHO="hostname; echo '$K8S_ip1 $K8S_provisionerUser pong'" 
     squawk 5 "ssh -n -p $K8S_sshPort $K8S_provisionerUser@$K8S_ip1 \"$MY_ECHO\""
     echo "ssh -n -p $K8S_sshPort $K8S_provisionerUser@$K8S_ip1 \"$MY_ECHO\""\
@@ -4800,6 +4819,7 @@ process_hosts_csv () {
   #do_etcd
   #write_kubeadmcfg_yaml
   #etcd_kubernetes_ext_etcd_method
+  ntpsync_in_parallel
   if [[ "$MASTERS_AS_ETCD" == "true" ]]; then
     etcd_kubernetes_docs_stacked_method
   else
@@ -5556,6 +5576,7 @@ main () {
       remove_vagrant_user
       hostname_in_parallel
       copy_known_hosts
+      ntpsync_in_parallel
     fi
   elif [[ $RAISON == "hostnamer" ]]; then
     if [[ $print_help == "true" ]]; then
