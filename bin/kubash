@@ -1248,7 +1248,7 @@ check_if_line_exists()
 
 add_line_to()
 {
-  squawk 5 " Adding '$LINE_TO_ADD'  to $TARGET_FILE_FOR_ADD"
+  squawk 105 " Adding '$LINE_TO_ADD'  to $TARGET_FILE_FOR_ADD"
   TARGET_FILE=$TARGET_FILE_FOR_ADD
     [[ -w "$TARGET_FILE" ]] || TARGET_FILE=$TARGET_FILE_FOR_ADD
     printf "%s\n" "$LINE_TO_ADD" >> "$TARGET_FILE"
@@ -4523,10 +4523,10 @@ do_command_in_parallel () {
   touch $do_command_tmp_para/hopper
   squawk 3 " do_command_in_parallel $@"
   if [[ -z "$kubash_hosts_csv_slurped" ]]; then
-    squawk 19 'slurp empty'
+    squawk 219 'slurp empty'
     hosts_csv_slurp
   else
-    squawk 19 "host slurp $(echo $kubash_hosts_csv_slurped)"
+    squawk 219 "host slurp $(echo $kubash_hosts_csv_slurped)"
   fi
   countzero_do_nodes=0
   squawk 120 'Start while loop'
@@ -4534,8 +4534,8 @@ do_command_in_parallel () {
   while IFS="," read -r $csv_columns
   do
     ((++countzero_do_nodes))
-    squawk 19 " count $countzero_do_nodes"
-    squawk 5 "ssh -n -p $K8S_sshPort $K8S_SU_USER@$K8S_ip1 \"sudo bash -c '$command2run'\""
+    squawk 219 " count $countzero_do_nodes"
+    squawk 205 "ssh -n -p $K8S_sshPort $K8S_SU_USER@$K8S_ip1 \"sudo bash -c '$command2run'\""
     echo "ssh -n -p $K8S_sshPort $K8S_SU_USER@$K8S_ip1 \"sudo bash -c '$command2run'\""\
         >> $do_command_tmp_para/hopper
   done <<< "$kubash_hosts_csv_slurped"
@@ -4562,10 +4562,10 @@ do_command () {
   do_command_host=$3
   command2run=$4
   if [[ "$do_command_host" == "localhost" ]]; then
-    squawk 5 "bash -c '$command2run'"
+    squawk 105 "bash -c '$command2run'"
     bash -c "$command2run"
   else
-    squawk 5 "ssh -n -p $do_command_port $do_command_user@$do_command_host \"bash -c '$command2run'\""
+    squawk 105 "ssh -n -p $do_command_port $do_command_user@$do_command_host \"bash -c '$command2run'\""
     ssh -n -p $do_command_port $do_command_user@$do_command_host "bash -c '$command2run'"
   fi
 }
@@ -4581,10 +4581,10 @@ sudo_command () {
   sudo_command_host=$3
   command2run=$4
   if [[ "$sudo_command_host" == "localhost" ]]; then
-    squawk 5 "sudo bash -c '$command2run'"
+    squawk 105 "sudo bash -c '$command2run'"
     sudo bash -c "$command2run"
   else
-    squawk 5 "ssh -n -p $sudo_command_port $sudo_command_user@$sudo_command_host \"$PSEUDO bash -l -c '$command2run'\""
+    squawk 105 "ssh -n -p $sudo_command_port $sudo_command_user@$sudo_command_host \"$PSEUDO bash -l -c '$command2run'\""
     ssh -n -p $sudo_command_port $sudo_command_user@$sudo_command_host "$PSEUDO bash -l -c '$command2run'"
   fi
 }
@@ -4610,7 +4610,7 @@ copy_in_parallel_to_all () {
   set_csv_columns
   while IFS="," read -r $csv_columns
   do
-    squawk 5 "rsync $KUBASH_RSYNC_OPTS 'ssh -p $K8S_sshPort' $file2copy $K8S_SU_USER@$K8S_ip1:$destination"
+    squawk 205 "rsync $KUBASH_RSYNC_OPTS 'ssh -p $K8S_sshPort' $file2copy $K8S_SU_USER@$K8S_ip1:$destination"
     echo "rsync $KUBASH_RSYNC_OPTS 'ssh -p $K8S_sshPort' $file2copy $K8S_SU_USER@$K8S_ip1:$destination"\
       >> $copy_in_to_all_tmp_para/hopper
   done <<< "$kubash_hosts_csv_slurped"
@@ -4640,8 +4640,8 @@ copy_in_parallel_to_role () {
   while IFS="," read -r $csv_columns
   do
     if [[ "$K8S_role" == "$role2copy2" ]]; then
-      squawk 3 " count $countzero_do_nodes"
-      squawk 5 "rsync $KUBASH_RSYNC_OPTS 'ssh -p $K8S_sshPort' $file2copy $K8S_SU_USER@$K8S_ip1:$destination"
+      squawk 219 " count $countzero_do_nodes"
+      squawk 205 "rsync $KUBASH_RSYNC_OPTS 'ssh -p $K8S_sshPort' $file2copy $K8S_SU_USER@$K8S_ip1:$destination"
       echo "rsync $KUBASH_RSYNC_OPTS 'ssh -p $K8S_sshPort' $file2copy $K8S_SU_USER@$K8S_ip1:$destination"\
         >> $copy_in_to_role_tmp_para/hopper
     fi
@@ -4672,8 +4672,8 @@ copy_in_parallel_to_os () {
   while IFS="," read -r $csv_columns
   do
     if [[ "$K8S_os" == "$os2copy2" ]]; then
-      squawk 3 " count $countzero_do_nodes"
-      squawk 5 "rsync $KUBASH_RSYNC_OPTS 'ssh -p $K8S_sshPort' $file2copy $K8S_SU_USER@$K8S_ip1:$destination"
+      squawk 219 " count $countzero_do_nodes"
+      squawk 205 "rsync $KUBASH_RSYNC_OPTS 'ssh -p $K8S_sshPort' $file2copy $K8S_SU_USER@$K8S_ip1:$destination"
       echo "rsync $KUBASH_RSYNC_OPTS 'ssh -p $K8S_sshPort' $file2copy $K8S_SU_USER@$K8S_ip1:$destination"\
         >> $copy_in_to_os_tmp_para/hopper
     fi
@@ -4703,8 +4703,8 @@ do_command_in_parallel_on_role () {
   while IFS="," read -r $csv_columns
   do
     if [[ "$K8S_role" == "$role2runiton" ]]; then
-      squawk 19 " count $countzero_do_nodes"
-      squawk 5 "ssh -n -p $K8S_sshPort $K8S_SU_USER@$K8S_ip1 \"sudo bash -c '$command2run'\""
+      squawk 219 " count $countzero_do_nodes"
+      squawk 205 "ssh -n -p $K8S_sshPort $K8S_SU_USER@$K8S_ip1 \"sudo bash -c '$command2run'\""
       echo "ssh -n -p $K8S_sshPort $K8S_SU_USER@$K8S_ip1 \"sudo bash -c '$command2run'\""\
         >> $do_command_on_role_tmp_para/hopper
     fi
@@ -4765,8 +4765,8 @@ do_command_in_parallel_on_os () {
   while IFS="," read -r $csv_columns
   do
     if [[ "$K8S_os" == "$os2runiton" ]]; then
-      squawk 19 " count $countzero_do_nodes"
-      squawk 5 "ssh -n -p $K8S_sshPort $K8S_SU_USER@$K8S_ip1 \"sudo bash -c '$command2run'\""
+      squawk 219 " count $countzero_do_nodes"
+      squawk 205 "ssh -n -p $K8S_sshPort $K8S_SU_USER@$K8S_ip1 \"sudo bash -c '$command2run'\""
       echo "ssh -n -p $K8S_sshPort $K8S_SU_USER@$K8S_ip1 \"sudo bash -c '$command2run'\""\
         >> $do_command_on_os_tmp_para/hopper
     fi
