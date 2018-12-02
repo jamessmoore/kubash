@@ -2832,14 +2832,34 @@ ntpsync_in_parallel () {
     echo "ssh -n -p $K8S_sshPort $K8S_provisionerUser@$K8S_ip1 \"$MY_NTP_SYNC\""\
         >> $ntp_sync_tmp_para/hopper
   done < $KUBASH_HOSTS_CSV
+  while IFS="," read -r $csv_columns
+  do
+    squawk 103 "ntp sync $K8S_user@$K8S_ip1"
+    MY_NTP_SYNC="timedatectl status "
+    squawk 5 "ssh -n -p $K8S_sshPort $K8S_provisionerUser@$K8S_ip1 \"$MY_NTP_SYNC\""
+    echo "ssh -n -p $K8S_sshPort $K8S_provisionerUser@$K8S_ip1 \"$MY_NTP_SYNC\""\
+        >> $ntp_sync_tmp_para/hopper2
+  done < $KUBASH_HOSTS_CSV
+  while IFS="," read -r $csv_columns
+  do
+    squawk 103 "ntp sync $K8S_user@$K8S_ip1"
+    MY_NTP_SYNC="date"
+    squawk 5 "ssh -n -p $K8S_sshPort $K8S_provisionerUser@$K8S_ip1 \"$MY_NTP_SYNC\""
+    echo "ssh -n -p $K8S_sshPort $K8S_provisionerUser@$K8S_ip1 \"$MY_NTP_SYNC\""\
+        >> $ntp_sync_tmp_para/hopper3
+  done < $KUBASH_HOSTS_CSV
 
   if [[ "$VERBOSITY" -gt "9" ]] ; then
     cat $ntp_sync_tmp_para/hopper
   fi
   if [[ "$PARALLEL_JOBS" -gt "1" ]] ; then
     $PARALLEL  -j $PARALLEL_JOBS -- < $ntp_sync_tmp_para/hopper
+    $PARALLEL  -j $PARALLEL_JOBS -- < $ntp_sync_tmp_para/hopper2
+    $PARALLEL  -j $PARALLEL_JOBS -- < $ntp_sync_tmp_para/hopper3
   else
     bash $ntp_sync_tmp_para/hopper
+    bash $ntp_sync_tmp_para/hopper2
+    bash $ntp_sync_tmp_para/hopper3
   fi
   rm -Rf $ntp_sync_tmp_para
 }
