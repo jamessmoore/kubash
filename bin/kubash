@@ -702,9 +702,11 @@ EOF
   #  ssh ${INIT_USER}@${HOST} "$command2run"
   done
 
-  command2run="kubeadm init --dry-run --ignore-preflight-errors=FileAvailable--etc-kubernetes-manifests-etcd.yaml,ExternalEtcdVersion --config /etc/kubernetes/kubeadmcfg.yaml"
-  echo "$command2run"
-  ssh ${INIT_USER}@${MASTERHOSTS[0]} "$command2run"
+  if [[ "$VERBOSITY" -ge "10" ]] ; then
+    command2run="kubeadm init --dry-run --ignore-preflight-errors=FileAvailable--etc-kubernetes-manifests-etcd.yaml,ExternalEtcdVersion --config /etc/kubernetes/kubeadmcfg.yaml"
+    squawk 105 "$command2run"
+    ssh ${INIT_USER}@${MASTERHOSTS[0]} "$command2run"
+  fi
   #sleep 11
   #command2run="kubeadm init  --ignore-preflight-errors=FileAvailable--etc-kubernetes-manifests-etcd.yaml,ExternalEtcdVersion --config /etc/kubernetes/kubeadmcfg.yaml"
   #master_grab_kube_config ${MASTERNAMES[0]} ${MASTERHOSTS[0]} $K8S_user ${MASTERPORTS[0]}
