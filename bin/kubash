@@ -705,8 +705,8 @@ EOF
     ssh ${INIT_USER}@${MASTERHOSTS[$i]} "$command2run"
   done
   squawk 33 "sleep 33 - give etcd a chance to settle"
-  sleep 33
-  #sleep 11
+  #sleep 33
+  sleep 11
 
   command2run="docker run --rm  \
     --net host \
