@@ -2683,6 +2683,7 @@ w8_kubectl () {
   while [[ "$countone_w8_kubectl" -lt "$countlimit_w8_kubectl" ]]; do
     squawk 1 '.' -n
     if [[ "$VERBOSITY" -gt "11" ]] ; then
+      squawk 105 "kubectl --kubeconfig=$KUBECONFIG get pods -n kube-system | grep kube-apiserver"
       kubectl --kubeconfig=$KUBECONFIG get pods -n kube-system | grep kube-apiserver
     fi
     result=$(kubectl --kubeconfig=$KUBECONFIG get pods -n kube-system 2>/dev/null | grep kube-apiserver |grep Running)
@@ -2693,7 +2694,7 @@ w8_kubectl () {
       break
     fi
     ((++countone_w8_kubectl))
-    squawk 9 "$countone_w8_kubectl"
+    squawk 209 "$countone_w8_kubectl"
     if [[ "$countone_w8_kubectl" -ge "$countlimit_w8_kubectl"  ]]; then
       croak 3  'Master is not coming up, investigate, breaking'
     fi
@@ -2715,17 +2716,18 @@ w8_node () {
   while [[ "$countone_w8_node" -lt "$countlimit_w8_node" ]]; do
     squawk 1 '.' -n
     if [[ "$VERBOSITY" -gt "11" ]] ; then
+      squawk 105  "kubectl --kubeconfig=$KUBECONFIG get node $node_name"
       kubectl --kubeconfig=$KUBECONFIG get node $node_name
     fi
     result=$(kubectl --kubeconfig=$KUBECONFIG get node $node_name | grep -v NotReady | grep Ready)
-    squawk 3 "Result is $result"
+    squawk 133 "Result is $result"
     if [[ "$result" ]]; then
       squawk 5 "Result nailed $result"
       ((++countone_w8_node))
       break
     fi
     ((++countone_w8_node))
-    squawk 9 "$countone_w8_node"
+    squawk 209 "$countone_w8_node"
     sleep 3
   done
   set -e
