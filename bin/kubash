@@ -5949,6 +5949,12 @@ main () {
       if [[ -z "$target_build" ]]; then
         target_build=kubeadm197-7.4-x86_64
       fi
+    elif [[ "$target_os" =~ 'beaver' ]]; then
+      if [[ -z "$target_build" ]]; then
+        echo "matching $target_os"
+        build_num=$(echo $target_os | sed 's/beaver//')
+        target_build=beaver$build_num-18.04-amd64
+      fi
     elif [[ "$target_os" =~ 'ubuntu' ]]; then
       if [[ -z "$target_build" ]]; then
         echo "matching $target_os"
