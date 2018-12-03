@@ -274,6 +274,11 @@
         "KUBASH_SET_ROOT_PW={{user `root_password_to_set`}}",
         "KUBASH_SET_SU_PW={{user `su_password_to_set`}}",
         "K8S_SU_USER={{user `k8s_su_user`}}",
+        "KUBEADM_INSTALL={{ user `kubeadm_install`}}",
+        "DOCKER_PKG={{ user `DOCKER_PKG`}}",
+        "DOCKER_COMPOSE_PKG={{ user `DOCKER_COMPOSE_PKG`}}",
+        "KUBEPKG_VERSION={{ user `KUBEPKG_VERSION`}}",
+        "ETCD_VERSION={{ user `ETCD_VERSION`}}",
         "no_proxy={{user `no_proxy`}}"
       ],
       "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
