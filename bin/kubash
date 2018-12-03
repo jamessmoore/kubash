@@ -4969,7 +4969,7 @@ do_coreos_initialization () {
 }
 
 do_openebs () {
-    if [OPENEBS_INSTALLATION_METHOD = 'helm' ]]; then
+    if [[ OPENEBS_INSTALLATION_METHOD = 'helm' ]]; then
     KUBECONFIG=$KUBECONFIG \
     helm install \
       --namespace openebs \
