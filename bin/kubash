@@ -4968,6 +4968,15 @@ do_coreos_initialization () {
   #rmdir $CORETMP
 }
 
+do_metallb () {
+    if [[ METALLB_INSTALLATION_METHOD = 'helm' ]]; then
+      helm install --name metallb stable/metallb
+    else
+      kubectl --kubeconfig=$KUBECONFIG apply -f \
+        https://raw.githubusercontent.com/google/metallb/v0.7.3/manifests/metallb.yaml
+    fi
+}
+
 do_openebs () {
     if [[ OPENEBS_INSTALLATION_METHOD = 'helm' ]]; then
     KUBECONFIG=$KUBECONFIG \
@@ -5523,6 +5532,13 @@ main () {
       exit 1
     fi
     exit 0
+  elif [[ $RAISON == "metallb" ]]; then
+    if [[ $print_help == "true" ]]; then
+      horizontal_rule
+      usage
+      exit 1
+    fi
+        do_metallb
   elif [[ $RAISON == "openebs" ]]; then
     if [[ $print_help == "true" ]]; then
       horizontal_rule
