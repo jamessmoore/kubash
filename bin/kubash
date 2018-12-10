@@ -2575,6 +2575,7 @@ write_ansible_kubespray_hosts () {
   else
     touch $KUBASH_ANSIBLE_HOSTS
   fi
+  cp -av $KUBASH_DIR/submodules/kubespray/inventory/sample/group_vars $KUBASH_CLUSTER_DIR/
   # Write all hosts to inventory for id
   set_csv_columns
   echo '[all]'  >> $KUBASH_ANSIBLE_HOSTS
