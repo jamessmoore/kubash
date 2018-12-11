@@ -337,7 +337,7 @@
     "name": "kubash-1.12.3-18.04",
     "no_proxy": "{{env `no_proxy`}}",
     "preseed_path": "preseed.cfg",
-    "template": "beaver-18.04-amd64",
+    "template": "beaver1.12.3-18.04-amd64",
     "version": "TIMESTAMP"
   }
 }
