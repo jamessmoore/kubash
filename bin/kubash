@@ -1527,7 +1527,7 @@ EOF
     ssh ${INIT_USER}@${HOST} "$command2run"
   done
 
-  command2run='kubeadm alpha phase certs etcd-ca'
+  command2run='kubeadm init phase certs etcd-ca'
   squawk 55 "ssh ${INIT_USER}@${ETCDHOSTS[0]} $command2run"
   ssh ${INIT_USER}@${ETCDHOSTS[0]} "$command2run"
 
