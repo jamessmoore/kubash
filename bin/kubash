@@ -6160,9 +6160,15 @@ do_command_in_parallel_on_os () {
 process_hosts_csv () {
   squawk 3 " process_hosts_csv"
   ntpsync_in_parallel
+  while IFS="," read -r $csv_columns
+  do
+    if [[ "$K8S_role" == "primary_master" ]]; then
+      get_major_minor_kube_version $K8S_user $K8S_ip1  $K8S_node $K8S_sshPort
+    fi
+  done <<< "$kubash_hosts_csv_slurped"
   if [[ $KUBE_MAJOR_VER -eq 1 ]]; then
     squawk 101 'Major Version 1'
-    squawk 53  "$KUBE_MAJOR_VER.$KUBE_VERSION supported"
+    squawk 53  "$KUBE_MAJOR_VER.$KUBE_MINOR_VER supported"
     if [[ $KUBE_MINOR_VER -eq 12 ]]; then
       if [[ "$MASTERS_AS_ETCD" == "true" ]]; then
         etcd_kubernetes_12_docs_stacked_method
@@ -6183,9 +6189,9 @@ process_hosts_csv () {
       fi
     fi
   elif [[ $MAJOR_VER -eq 2 ]]; then
-      croak 3  "$KUBE_MAJOR_VER.$KUBE_VERSION not supported at this time"
+      croak 3  "$KUBE_MAJOR_VER.$KUBE_MINOR_VER not supported at this time"
   else
-    croak 3  "$KUBE_MAJOR_VER.$KUBE_VERSION not supported at this time"
+    croak 3  "$KUBE_MAJOR_VER.$KUBE_MINOR_VER not supported at this time"
   fi
   # spin up nodes
   if [[ "$PARALLEL_JOBS" -gt "1" ]] ; then
@@ -6650,7 +6656,9 @@ set_name () {
       while IFS="," read -r $csv_columns
       do
         if [[ "$K8S_role" == 'etcd' ]]; then
-        export MASTERS_AS_ETCD="false"
+          export MASTERS_AS_ETCD="false"
+        elif [[ "$K8S_role" == "primary_master" ]]; then
+          get_major_minor_kube_version $K8S_user $K8S_ip1  $K8S_node $K8S_sshPort
         fi
       done <<< "$kubash_hosts_csv_slurped"
     fi
