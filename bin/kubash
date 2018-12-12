@@ -2224,59 +2224,20 @@ etcd_kubernetes_13_docs_stacked_method () {
       ((++node_count_zero))
     fi
   done <<< "$kubash_hosts_csv_slurped"
-  echo $ETCDHOSTS
-  sleep 33
   get_major_minor_kube_version $K8S_user ${MASTERHOSTS[0]} ${MASTERNAMES[0]} ${MASTERPORTS[0]}
   determine_api_version
 
-  echo -n '            initial-cluster: "' > $etcd_stacked_tmp/initial-cluster.head
-  if [[ "$ETCD_TLS" == 'true' ]]; then
-    echo -n '            listen-client-urls: "https://127.0.0.1:2379,' > $etcd_stacked_tmp/listen-client_urls.head
-  else
-    echo -n '            listen-client-urls: "https://127.0.0.1:2379,' > $etcd_stacked_tmp/listen-client_urls.head
-  fi
   count_etcd=0
-  countetcdnodes=0
   while IFS="," read -r $csv_columns
   do
-    echo "- \"${K8S_ip1}\"" >> $etcd_stacked_tmp/apiservercertsans.line
-    if [[ "$K8S_role" == 'etcd' || "$K8S_role" == 'master' || "$K8S_role" == 'primary_master' || "$K8S_role" == 'primary_etcd' ]]; then
-      if [[ $countetcdnodes -gt 0 ]]; then
-        printf ',' >> $etcd_stacked_tmp/initial-cluster.line
-        printf ',' >> $etcd_stacked_tmp/listen-client_urls.line
-      fi
-      if [[ "$ETCD_TLS" == 'true' ]]; then
-        echo "      - https://${K8S_ip1}:2379" >> $etcd_stacked_tmp/endpoints.line
-        printf "${K8S_node}=https://${K8S_ip1}:2380" >>  $etcd_stacked_tmp/initial-cluster.line
-        printf "https://${K8S_ip1}:2379" > $etcd_stacked_tmp/${countetcdnodes}-listen-client_urls.line
-      else
-        echo "      - https://${K8S_ip1}:2379" >> $etcd_stacked_tmp/endpoints.line
-        printf "${K8S_node}=https://${K8S_ip1}:2380" >>  $etcd_stacked_tmp/initial-cluster.line
-        printf "https://${K8S_ip1}:2379" > $etcd_stacked_tmp/${countetcdnodes}-listen-client_urls.line
-      fi
-      cp $etcd_stacked_tmp/initial-cluster.line $etcd_stacked_tmp/${countetcdnodes}-initial-cluster.line
-      printf '"' >> $etcd_stacked_tmp/${countetcdnodes}-initial-cluster.line
-      printf " \n" >> $etcd_stacked_tmp/${countetcdnodes}-initial-cluster.line
-      printf '"' >> $etcd_stacked_tmp/${countetcdnodes}-listen-client_urls.line
-      printf " \n" >> $etcd_stacked_tmp/${countetcdnodes}-listen-client_urls.line
-      ((++countetcdnodes))
-    fi
+    echo "${TAB_1}- \"${K8S_ip1}\"" >> $etcd_stacked_tmp/apiservercertsans.line
     ((++count_etcd))
   done <<< "$kubash_hosts_csv_slurped"
-  printf '"' >> $etcd_stacked_tmp/initial-cluster.line
-  printf '"' >> $etcd_stacked_tmp/listen-client_urls.line
-  printf " \n" >> $etcd_stacked_tmp/initial-cluster.line
-  printf " \n" >> $etcd_stacked_tmp/listen-client_urls.line
 
-  initial_cluster_line=$(cat $etcd_stacked_tmp/initial-cluster.head $etcd_stacked_tmp/initial-cluster.line)
   api_server_cert_sans_line=$(cat $etcd_stacked_tmp/apiservercertsans.line)
-  endpoints_line=$(cat $etcd_stacked_tmp/endpoints.line)
 
   for i in "${!MASTERHOSTS[@]}"; do
-    initial_cluster_line=$(cat $etcd_stacked_tmp/initial-cluster.head $etcd_stacked_tmp/${i}-initial-cluster.line)
-    listen_client_urls_line=$(cat $etcd_stacked_tmp/listen-client_urls.head $etcd_stacked_tmp/${i}-listen-client_urls.line)
     api_server_cert_sans_line=$(cat $etcd_stacked_tmp/apiservercertsans.line)
-    endpoints_line=$(cat $etcd_stacked_tmp/endpoints.line)
     HOST=${MASTERHOSTS[$i]}
     NAME=${MASTERNAMES[$i]}
     mkdir -p $etcd_stacked_tmp/${HOST}
@@ -2288,25 +2249,12 @@ etcd_kubernetes_13_docs_stacked_method () {
     cat << EOF > $etcd_stacked_tmp/${HOST}/kubeadmcfg.yaml
 apiVersion: $kubeadm_apiVersion
 kind: $kubeadm_cfg_kind
-apiServerCertSANs:
-- "127.0.0.1"
+kubernetesVersion: stable
+apiServer:
+  certSANs:
+  - "127.0.0.1"
 $api_server_cert_sans_line
 controlPlaneEndpoint: "${MASTERHOSTS[0]}:6443"
-etcd:
-    local:
-        serverCertSANs:
-        - "${HOST}"
-        - "${NAME}"
-        peerCertSANs:
-        - "${HOST}"
-        - "${NAME}"
-        extraArgs:
-$listen_client_urls_line
-            advertise-client-urls: "https://${HOST}:2379"
-            listen-peer-urls: "https://${HOST}:2380"
-            initial-advertise-peer-urls: "https://${HOST}:2380"
-$initial_cluster_line
-            initial-cluster-state: $INITIAL_CLUSTER_STATE
 networking:
   podSubnet: $my_KUBE_CIDR
 EOF
@@ -2315,21 +2263,13 @@ EOF
     command2run='mv /tmp/kubeadmcfg.yaml /etc/kubernetes/'
     sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
 
-    if [[ -e "$KUBASH_CLUSTER_DIR/join.sh" ]]; then
-      rsync $KUBASH_RSYNC_OPTS "ssh -p ${MASTERPORTS[$i]}" $KUBASH_DIR/templates/kube_stacked_init.sh $STACKED_USER@$HOST:/tmp/
-      squawk 55 "push_kube_pki_stacked_method  $K8S_user ${MASTERHOSTS[$i]} ${MASTERPORTS[$i]}"
-      push_kube_pki_stacked_method ${STACKED_USER} ${MASTERHOSTS[$i]} ${MASTERPORTS[$i]}
-      command2run="ls -Rl /etc/kubernetes"
-      sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
-      command2run="rm -fv /etc/kubernetes/kubelet.conf"
-      sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
-      escaped_master=$( echo ${MASTERHOSTS[0]} |sed 's/\./\\./g')
-      sedder="s/$escaped_master/$HOST/g"
-      command2run='mv /tmp/kube_stacked_init.sh /etc/kubernetes/'
-      sudo_command ${MASTERPORTS[$i]} ${STACKED_USER} ${MASTERHOSTS[$i]} "$command2run"
-      my_KUBE_INIT="bash /etc/kubernetes/kube_stacked_init.sh ${MASTERHOSTS[0]} ${MASTERNAMES[0]} ${MASTERHOSTS[$i]} ${MASTERNAMES[$i]}"
+    if [[ -e "$KUBASH_CLUSTER_DIR/master_join.sh" ]]; then
+      rsync $KUBASH_RSYNC_OPTS "ssh -p ${MASTERPORTS[$i]}" $KUBASH_CLUSTER_DIR/master_join.sh $INIT_USER@$HOST:/tmp/
+      push_kube_pki_ext_etcd_sub ${INIT_USER} ${MASTERHOSTS[$i]} ${MASTERPORTS[$i]}
+      my_KUBE_INIT="bash /tmp/master_join.sh"
       squawk 5 "kube init --> $my_KUBE_INIT"
-      ssh -n -p ${MASTERPORTS[$i]} root@${HOST} "$my_KUBE_INIT" 2>&1 | tee $etcd_stacked_tmp/${HOST}-rawresults.k8s
+      ssh -n -p ${MASTERPORTS[$i]} root@${HOST} "$my_KUBE_INIT" 2>&1 | tee $etcd_test_tmp/${HOST}-rawresults.k8s
+      w8_node $my_node_name
     else
       my_KUBE_INIT="kubeadm init --config=/etc/kubernetes/kubeadmcfg.yaml"
       squawk 5 "master kube init --> $my_KUBE_INIT"
@@ -2344,6 +2284,8 @@ EOF
         croak 3  'kubeadm init failed!'
       else
         echo $run_join > $KUBASH_CLUSTER_DIR/join.sh
+        echo $run_join > $KUBASH_CLUSTER_DIR/master_join.sh
+        sed -i 's/$/ --experimental-control-plane/' $KUBASH_CLUSTER_DIR/master_join.sh
         echo $join_token > $KUBASH_CLUSTER_DIR/join_token
         master_grab_kube_config ${NAME} ${HOST} ${STACKED_USER} ${MASTERPORTS[$i]}
         grab_kube_pki_stacked_method ${STACKED_USER} ${MASTERHOSTS[$i]} ${MASTERPORTS[$i]}
