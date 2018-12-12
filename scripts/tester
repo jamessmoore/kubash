@@ -5,19 +5,19 @@ if [ $# -ne 2 ]; then
   echo 'usage:'
   echo "$0 cluster_name cluster_version"
   echo 'e.g.'
-  echo "$0 stacked 1.12.3"
+  echo "$0 stacked ubuntu1.12.3"
   exit 1
 fi
 TMP=$(mktemp -d)
 this_test=$1
-this_kube_ver=$2
+this_os_ver=$2
 
 # delete the cluster
 kubash -n $this_test decommission -y
 rm -Rf ~/.kubash/clusters/$this_test
 
 # prep for the cluster
-REPLACEME_OS_TPL=$this_kube_ver \
+REPLACEME_OS_TPL=$this_os_ver \
 envsubst \
     < ~/.kubash/examples/$this_test.tpl \
     > $TMP/cluster.yaml
