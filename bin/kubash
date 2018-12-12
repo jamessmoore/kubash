@@ -2156,6 +2156,7 @@ etcd_kubernetes_13_docs_stacked_method () {
   api_server_cert_sans_line=$(cat $etcd_stacked_tmp/apiservercertsans.line)
 
   for i in "${!MASTERHOSTS[@]}"; do
+    squawk 35 "master-loop ${MASTERHOSTS[$i]} ${MASTERPORTS[$i]}"
     api_server_cert_sans_line=$(cat $etcd_stacked_tmp/apiservercertsans.line)
     HOST=${MASTERHOSTS[$i]}
     NAME=${MASTERNAMES[$i]}
