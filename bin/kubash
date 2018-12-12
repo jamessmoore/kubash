@@ -1550,16 +1550,16 @@ EOF
 
   for i in "${!ETCDHOSTS[@]}"; do
     HOST=${ETCDHOSTS[$i]}
-    command2run="kubeadm alpha phase certs etcd-server --config=/tmp/${HOST}/kubeadmcfg.yaml"
+    command2run="kubeadm init phase certs etcd-server --config=/tmp/${HOST}/kubeadmcfg.yaml"
     squawk 55 "ssh ${INIT_USER}@${ETCDHOSTS[0]} $command2run"
     ssh ${INIT_USER}@${ETCDHOSTS[0]} "$command2run"
-    command2run="kubeadm alpha phase certs etcd-peer --config=/tmp/${HOST}/kubeadmcfg.yaml"
+    command2run="kubeadm init phase certs etcd-peer --config=/tmp/${HOST}/kubeadmcfg.yaml"
     squawk 55 "ssh ${INIT_USER}@${ETCDHOSTS[0]} $command2run"
     ssh ${INIT_USER}@${ETCDHOSTS[0]} "$command2run"
-    command2run="kubeadm alpha phase certs etcd-healthcheck-client --config=/tmp/${HOST}/kubeadmcfg.yaml"
+    command2run="kubeadm init phase certs etcd-healthcheck-client --config=/tmp/${HOST}/kubeadmcfg.yaml"
     squawk 55 "ssh ${INIT_USER}@${ETCDHOSTS[0]} $command2run"
     ssh ${INIT_USER}@${ETCDHOSTS[0]} "$command2run"
-    command2run="kubeadm alpha phase certs apiserver-etcd-client --config=/tmp/${HOST}/kubeadmcfg.yaml"
+    command2run="kubeadm init phase certs apiserver-etcd-client --config=/tmp/${HOST}/kubeadmcfg.yaml"
     squawk 55 "ssh ${INIT_USER}@${ETCDHOSTS[0]} $command2run"
     ssh ${INIT_USER}@${ETCDHOSTS[0]} "$command2run"
     command2run="rsync -a /etc/kubernetes/pki /tmp/${HOST}/"
@@ -1600,8 +1600,8 @@ EOF
     HOST=${ETCDHOSTS[$i]}
     squawk 55 "ssh ${INIT_USER}@${HOST} sudo chown -R root:root /etc/kubernetes/pki"
     ssh ${INIT_USER}@${HOST} "sudo chown -R root:root /etc/kubernetes/pki"
-    squawk 55 "ssh ${INIT_USER}@${HOST} kubeadm alpha phase etcd local --config=/etc/kubernetes/kubeadmcfg.yaml"
-    ssh ${INIT_USER}@${HOST} "kubeadm alpha phase etcd local --config=/etc/kubernetes/kubeadmcfg.yaml"
+    squawk 55 "ssh ${INIT_USER}@${HOST} kubeadm init phase etcd local --config=/etc/kubernetes/kubeadmcfg.yaml"
+    ssh ${INIT_USER}@${HOST} "kubeadm init phase etcd local --config=/etc/kubernetes/kubeadmcfg.yaml"
   done
   for i in "${!ETCDHOSTS[@]}"; do
     HOST=${ETCDHOSTS[$i]}
